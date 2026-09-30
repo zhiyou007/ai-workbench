@@ -154,3 +154,13 @@ docker run -d --name ai-workbench -p 8010:8010 \
 - 任务队列：`data/tasks.json`
 - 生成文件：`data/output/*.png`、`data/videos/*.mp4`
 - 备份：直接复制整个 `data/` 目录即可。
+
+---
+
+## 联系作者
+
+项目优化升级、定制功能、使用咨询，扫码添加作者微信：
+
+![联系作者微信](docs/contact-qrcode.png)
+
+工作台内左下角导航也有「联系作者」入口，点击即可扫码。

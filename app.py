@@ -32,6 +32,8 @@ HISTORY_PATH = os.path.join(DATA_DIR, "history.json")
 TASKS_PATH = os.path.join(DATA_DIR, "tasks.json")
 os.makedirs(OUT_DIR, exist_ok=True)
 os.makedirs(VIDEO_DIR, exist_ok=True)
+DOCS_DIR = os.path.join(BASE_DIR, "docs")
+os.makedirs(DOCS_DIR, exist_ok=True)
 
 IMAGE_MODEL = "agnes-image-2.5-flash"   # 图像：实测可用（比 2.1 更强）
 TEXT_MODEL = "agnes-3.0-flash"          # 聊天：实测可用
@@ -954,6 +956,7 @@ def api_config():
 
 
 app.mount("/files", StaticFiles(directory=DATA_DIR), name="files")
+app.mount("/docs", StaticFiles(directory=DOCS_DIR), name="docs")
 
 
 if __name__ == "__main__":
