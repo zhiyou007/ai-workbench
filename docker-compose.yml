@@ -1,0 +1,12 @@
+services:
+  ai-workbench:
+    build: .
+    container_name: ai-workbench
+    ports:
+      - "8010:8010"
+    volumes:
+      # API key 配置：把项目内的 config.json 挂进容器（只读，防止被容器修改）
+      - ./config.json:/app/config.json:ro
+      # 数据目录：生成的图片/视频、历史记录、任务队列持久化在宿主机
+      - ./data:/app/data
+    restart: unless-stopped

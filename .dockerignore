@@ -1,0 +1,10 @@
+# 排除：本地运行环境与数据（Docker 里用系统 ffmpeg + 运行时挂载）
+.venv/
+data/
+tools/
+server.log
+server.err.log
+*.pyc
+__pycache__/
+.dockerignore
+README.md

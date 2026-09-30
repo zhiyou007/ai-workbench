@@ -1,0 +1,22 @@
+# ===== 密钥：绝不能入库 =====
+config.json
+
+# ===== 本地环境 =====
+.venv/
+__pycache__/
+*.pyc
+
+# ===== 数据与资产（含用户隐私、历史记录）=====
+data/
+*.log
+
+# ===== 本地 ffmpeg 二进制（110MB，Docker 用系统 ffmpeg）=====
+tools/
+
+# ===== 临时脚本 =====
+_track_*.py
+_track_*.txt
+_patch*.py
+_patch2*.py
+_backfill*.py
+_fix_*.py

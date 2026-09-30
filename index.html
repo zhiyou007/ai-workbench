@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agnes AI 免费工作台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: #eef1f6; color: #1f2937; min-height: 100vh;
+  }
+  .shell { display: flex; min-height: 100vh; }
+
+  /* ===== 左侧导航 ===== */
+  .nav {
+    width: 208px; flex: none; background: #101828; color: #cbd5e1;
+    display: flex; flex-direction: column; padding: 16px 10px; position: sticky; top: 0; height: 100vh;
+  }
+  .nav .logo {
+    display: flex; align-items: center; gap: 8px; padding: 4px 8px 16px;
+    color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .3px;
+  }
+  .nav .logo svg { flex: none; }
+  .nav .menu { flex: 1; overflow-y: auto; }
+  .nav .grp { font-size: 11px; color: #64748b; padding: 12px 8px 4px; }
+  .nav .item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: 8px; font-size: 13.5px; cursor: pointer; color: #cbd5e1;
+    margin-bottom: 2px; transition: background .12s, color .12s; border: none; background: transparent; width: 100%; text-align: left;
+  }
+  .nav .item:hover { background: #1e293b; color: #fff; }
+  .nav .item.active { background: #6366f1; color: #fff; }
+  .nav .item svg { flex: none; }
+  .nav .badge {
+    margin-left: auto; background: #ef4444; color: #fff; font-size: 11px;
+    min-width: 18px; height: 18px; border-radius: 999px; display: none;
+    align-items: center; justify-content: center; padding: 0 5px; font-weight: 600;
+  }
+  .nav .badge.show { display: inline-flex; }
+  .nav .foot {
+    border-top: 1px solid #1e293b; padding: 12px 8px 2px; font-size: 11px;
+    color: #64748b; line-height: 1.7; word-break: break-all;
+  }
+
+  /* ===== 主区 ===== */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 24px;
+    display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 10;
+  }
+  .topbar h2 { font-size: 16px; font-weight: 700; }
+  .topbar .busy {
+    background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 12px;
+    padding: 4px 12px; border-radius: 999px; cursor: pointer; display: none;
+  }
+  .topbar .busy.show { display: inline-block; }
+  .topbar .busy:hover { background: #dbeafe; }
+  .topbar .status { margin-left: auto; font-size: 12px; color: #059669; }
+  .topbar .status.err { color: #dc2626; }
+  .content { padding: 20px 24px 40px; flex: 1; }
+  .view { display: none; }
+  .view.on { display: block; }
+
+  .panel {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 18px;
+  }
+  .panel h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #111827; }
+  textarea {
+    width: 100%; min-height: 96px; resize: vertical; border: 1px solid #d1d5db;
+    border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: inherit;
+    line-height: 1.6; outline: none; background: #fff;
+  }
+  textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+  .opts { display: flex; gap: 14px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .opts label { font-size: 13px; color: #4b5563; display: flex; align-items: center; gap: 6px; }
+  select, input[type=number] {
+    border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 8px;
+    font-size: 13px; background: #fff; outline: none;
+  }
+  .btn {
+    background: #6366f1; color: #fff; border: none; border-radius: 8px;
+    padding: 9px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background .15s; margin-top: 12px;
+  }
+  .btn:hover { background: #4f46e5; }
+  .btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+  .btn.ghost {
+    background: #fff; color: #4b5563; border: 1px solid #d1d5db; padding: 6px 12px;
+    font-size: 12.5px; margin-top: 0; font-weight: 500;
+  }
+  .btn.ghost:hover { border-color: #6366f1; color: #6366f1; }
+  .btn.danger { background: #ef4444; }
+  .btn.danger:hover { background: #dc2626; }
+  .msg { font-size: 13px; margin-top: 10px; color: #6b7280; min-height: 18px; }
+  .msg.err { color: #dc2626; }
+
+  /* 参考图 */
+  .refs-box { border: 1px dashed #c7cbfb; background: #f8f8ff; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+  .refs-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .mini-btn {
+    background: #eef2ff; color: #4f46e5; border: 1px solid #c7cbfb;
+    border-radius: 8px; padding: 6px 12px; font-size: 12.5px; cursor: pointer;
+  }
+  .mini-btn:hover { background: #e0e7ff; }
+  .refs-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .ref-item { position: relative; }
+  .ref-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; background: #f3f4f6; display: block; }
+  .ref-item .x {
+    position: absolute; top: -7px; right: -7px; width: 20px; height: 20px;
+    border-radius: 50%; border: none; background: #ef4444; color: #fff;
+    font-size: 11px; cursor: pointer; line-height: 1;
+  }
+  .refs-his-title { font-size: 12px; color: #9ca3af; margin-top: 10px; }
+  .refs-his { display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px; }
+  .refs-his img {
+    width: 52px; height: 52px; object-fit: cover; border-radius: 8px; cursor: pointer;
+    border: 2px solid transparent; background: #f3f4f6; flex: none;
+  }
+  .refs-his img:hover { border-color: #a5b4fc; }
+  .refs-his img.sel { border-color: #6366f1; }
+
+  /* 任务中心 */
+  .task-row {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 10px; scroll-margin-top: 64px;
+  }
+  .task-row .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .t-type {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; flex: none;
+  }
+  .t-type.video { background: #ede9fe; color: #7c3aed; }
+  .t-type.image { background: #dbeafe; color: #2563eb; }
+  .t-prompt { flex: 1; min-width: 200px; font-size: 13.5px; color: #374151;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .t-status { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; flex: none; }
+  .t-status.queued { background: #f3f4f6; color: #6b7280; }
+  .t-status.running { background: #eff6ff; color: #2563eb; }
+  .t-status.completed { background: #ecfdf5; color: #059669; }
+  .t-status.failed { background: #fef2f2; color: #dc2626; }
+  .t-status.cancelled { background: #f3f4f6; color: #9ca3af; }
+  .t-time { font-size: 12px; color: #9ca3af; flex: none; }
+  .task-row .prog { height: 6px; background: #e5e7eb; border-radius: 3px; margin-top: 10px; overflow: hidden; }
+  .task-row .prog > div { height: 100%; width: 0%; background: #6366f1; transition: width .5s; }
+  .task-row .body { margin-top: 10px; display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .task-row .body .err { font-size: 12.5px; color: #dc2626; word-break: break-all; max-width: 560px; }
+  .task-row .body video { width: 320px; max-height: 200px; border-radius: 8px; background: #000; display: block; }
+  .task-row .body .thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .task-row .body .thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+  .task-row .ops { display: flex; gap: 8px; margin-left: auto; align-items: center; }
+  .task-row .ops a { font-size: 12.5px; color: #6366f1; text-decoration: none; }
+  .task-row .ops a:hover { text-decoration: underline; }
+
+  /* 历史资产 */
+  .assets-filter { display: flex; gap: 8px; margin-bottom: 14px; }
+  .assets-filter .mini-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+  .assets-wrap { display: flex; gap: 16px; align-items: flex-start; }
+  .his-list { flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; gap: 8px; max-height: 74vh; overflow-y: auto; padding-right: 4px; }
+  .his-item { display: flex; gap: 10px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; cursor: pointer; align-items: center; position: relative; }
+  .his-item:hover { border-color: #c7d2fe; }
+  .his-item.active { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.22); }
+  .his-item .thumb { width: 76px; height: 54px; border-radius: 6px; object-fit: cover; background: #f9fafb; flex: none; display: block; }
+  .his-item.vid .thumb { background: #000; }
+  .his-item .info { flex: 1; min-width: 0; padding-right: 22px; }
+  .his-item .info .t { font-size: 12.5px; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .his-item .info .s { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .his-item .del {
+    position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%;
+    border: none; background: rgba(17,24,39,.55); color: #fff; font-size: 11px; cursor: pointer; line-height: 1;
+  }
+  .his-item .del:hover { background: #ef4444; }
+  .his-detail { flex: 2 1 0; min-width: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; }
+  .his-detail .preview { width: 100%; border-radius: 8px; background: #000; max-height: 420px; object-fit: contain; }
+  .his-detail .prompt-block { margin-top: 10px; font-size: 13px; line-height: 1.7; color: #374151; white-space: pre-wrap; word-break: break-word; }
+  .his-detail .seg { border-left: 3px solid #6366f1; padding: 6px 10px; margin: 6px 0; background: #f9fafb; border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.6; word-break: break-word; }
+
+  .recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .recent .rc { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+  .recent .rc img { width: 100%; display: block; aspect-ratio: 1/1; object-fit: cover; cursor: pointer; }
+  .recent .rc video { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; background: #000; cursor: pointer; }
+  .recent .rc .lbl { padding: 6px 10px; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between; }
+  .recent .rc .lbl a { color: #6366f1; text-decoration: none; }
+
+  .empty { color: #9ca3af; font-size: 13px; text-align: center; padding: 36px 0; }
+
+  /* 聊天 */
+  .chatbox { border: 1px solid #e5e7eb; border-radius: 10px; height: 400px; overflow-y: auto; padding: 14px; background: #fafbfc; }
+  .chatbox .m { margin-bottom: 10px; max-width: 85%; }
+  .chatbox .m .who { font-size: 11.5px; color: #9ca3af; margin-bottom: 2px; }
+  .chatbox .m .body {
+    display: inline-block; padding: 8px 12px; border-radius: 10px; font-size: 14px;
+    line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+  }
+  .chatbox .m.user { text-align: right; margin-left: auto; }
+  .chatbox .m.user .body { background: #6366f1; color: #fff; border-top-right-radius: 2px; }
+  .chatbox .m.ai .body { background: #fff; border: 1px solid #e5e7eb; border-top-left-radius: 2px; }
+  .chatinput { display: flex; gap: 10px; margin-top: 12px; }
+  .chatinput textarea { min-height: 44px; max-height: 120px; }
+  .chatinput .btn { margin-top: 0; padding: 9px 18px; }
+  .answer-box { margin-top: 14px; background: #fafbfc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; font-size: 14px; line-height: 1.75; white-space: pre-wrap; display: none; }
+
+  .modal { display: none; position: fixed; inset: 0; background: rgba(17,24,39,.8); z-index: 50; align-items: center; justify-content: center; padding: 30px; }
+  .modal.show { display: flex; }
+  .modal img, .modal video { max-width: 90vw; max-height: 88vh; border-radius: 8px; }
+  .modal video { background: #000; }
+  .vid-card { position: relative; cursor: pointer; }
+  .vid-card video { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; background: #000; }
+  .vid-card .play-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+
+  @media (max-width: 820px) {
+    .shell { flex-direction: column; }
+    .nav { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 12px; }
+    .nav .logo { padding: 4px 8px; }
+    .nav .menu { display: flex; flex-wrap: wrap; gap: 4px; }
+    .nav .grp { display: none; }
+    .nav .item { width: auto; padding: 6px 10px; }
+    .nav .foot { display: none; }
+    .content { padding: 14px; }
+    .task-row .body video { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- ===== 左侧导航 ===== -->
+  <aside class="nav">
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" fill="#6366f1"/><path d="M7 14.5 10 10l3 4 2-2.5 2 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Agnes 工作台
+    </div>
+    <div class="menu">
+      <div class="grp">AI 生成</div>
+      <button class="item active" data-view="t2i" onclick="setView('t2i')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4-4-9 9"/></svg>文生图
+      </button>
+      <button class="item" data-view="i2i" onclick="setView('i2i')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h6"/></svg>图生图 · 合成
+      </button>
+      <button class="item" data-view="video" onclick="setView('video')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="14" height="14" rx="3"/><path d="m17 10 4-2.5v9L17 14"/></svg>视频生成
+      </button>
+      <button class="item" data-view="vision" onclick="setView('vision')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>图像理解
+      </button>
+      <button class="item" data-view="chat" onclick="setView('chat')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"/></svg>聊天
+      </button>
+      <div class="grp">管理</div>
+      <button class="item" data-view="tasks" onclick="setView('tasks')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>任务中心
+        <span class="badge" id="taskBadge">0</span>
+      </button>
+      <button class="item" data-view="assets" onclick="setView('assets')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4-4-9 9"/></svg>历史资产
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== 主区 ===== -->
+  <div class="main">
+    <div class="topbar">
+      <h2 id="viewTitle">文生图</h2>
+      <span class="busy" id="busyBadge" onclick="setView('tasks')">任务进行中 · 0</span>
+      <span class="status" id="status">就绪</span>
+    </div>
+    <div class="content">
+
+      <!-- ===== 文生图 ===== -->
+      <div class="view on" id="view-t2i">
+        <div class="panel">
+          <h3>文生图</h3>
+          <textarea id="promptT2I" placeholder="描述你想生成的画面，越具体越好，例如：一只戴着宇航员头盔的橘猫漂浮在星空中，3D 渲染风格，电影感打光"></textarea>
+          <div class="opts">
+            <label>档位
+              <select id="levelT2I">
+                <option value="1K" selected>1K（1024px）</option><option value="2K">2K（2048px）</option>
+                <option value="3K">3K（3072px）</option><option value="4K">4K（4096px）</option>
+              </select>
+            </label>
+            <label>比例<select id="ratioT2I">
+              <option value="1:1" selected>1:1</option><option value="3:4">3:4</option><option value="4:3">4:3</option>
+              <option value="16:9">16:9</option><option value="9:16">9:16</option><option value="2:3">2:3</option>
+              <option value="3:2">3:2</option><option value="21:9">21:9</option>
+            </select></label>
+            <label>张数<input type="number" id="nT2I" value="1" min="1" max="4" style="width:60px"></label>
+          </div>
+          <button class="btn" id="goT2I">生成图片</button>
+          <div class="msg" id="msgT2I"></div>
+        </div>
+        <div class="panel">
+          <h3>最近生成</h3>
+          <div class="recent" id="recentT2I"></div>
+          <div class="empty" id="emptyT2I">还没有结果，去生成一张吧</div>
+        </div>
+      </div>
+
+      <!-- ===== 图生图 · 合成 ===== -->
+      <div class="view" id="view-i2i">
+        <div class="panel">
+          <h3>图生图 · 多图合成</h3>
+          <div class="refs-box">
+            <div class="refs-actions">
+              <button class="mini-btn" onclick="upRefs('i2i')">上传参考图（可多张，≤10MB/张）</button>
+              <span style="font-size:12px;color:#9ca3af">已选 <b id="cntI2I">0</b>/5 张 · 单张=图生图，多张=合成</span>
+            </div>
+            <div class="refs-list" id="refsI2I"></div>
+            <div class="refs-his-title">或从历史记录选（点击加/减）：</div>
+            <div class="refs-his" id="hisI2I"></div>
+          </div>
+          <textarea id="promptI2I" placeholder="描述修改或合成要求，例如：把猫的围巾换成红色，背景改为星空；多图时说明每张图扮演什么角色"></textarea>
+          <div class="opts">
+            <label>档位<select id="levelI2I"></select></label>
+            <label>比例<select id="ratioI2I"></select></label>
+            <label>张数<input type="number" id="nI2I" value="1" min="1" max="4" style="width:60px"></label>
+          </div>
+          <button class="btn" id="goI2I">生成（编辑 / 合成）</button>
+          <div class="msg" id="msgI2I"></div>
+        </div>
+        <div class="panel">
+          <h3>最近生成</h3>
+          <div class="recent" id="recentI2I"></div>
+          <div class="empty" id="emptyI2I">还没有结果</div>
+        </div>
+      </div>
+
+      <!-- ===== 视频生成 ===== -->
+      <div class="view" id="view-video">
+        <div class="panel">
+          <h3>视频生成（耗时任务 · 自动进入任务队列）</h3>
+          <div class="opts" style="margin-top:0">
+            <label>模式
+              <select id="vMode">
+                <option value="text">文生视频（纯文字）</option>
+                <option value="reference">图生视频（参考图，≤5张）</option>
+              </select>
+            </label>
+            <label>时长<select id="vSec"><option>4</option><option selected>5</option><option>6</option><option>8</option><option>10</option><option>12</option></select>秒</label>
+            <label>画幅<select id="vRatio">
+              <option value="16:9" selected>16:9</option><option value="21:9">21:9</option><option value="4:3">4:3</option>
+              <option value="1:1">1:1</option><option value="3:4">3:4</option><option value="9:16">9:16</option>
+            </select></label>
+          </div>
+          <div class="refs-box" id="vRefsBox" style="display:none;margin-top:12px">
+            <div class="refs-actions">
+              <button class="mini-btn" onclick="upRefs('video')">上传参考图（≤5张）</button>
+              <span style="font-size:12px;color:#9ca3af">已选 <b id="cntVideo">0</b>/5 张</span>
+            </div>
+            <div class="refs-list" id="refsVideo"></div>
+            <div class="refs-his-title">或从历史记录选：</div>
+            <div class="refs-his" id="hisVideo"></div>
+          </div>
+          <textarea id="promptV" placeholder="描述视频内容与运镜，例如：一只橘猫在草地上奔跑，镜头跟随，阳光明媚，卡通风格"></textarea>
+          <button class="btn" id="goV">提交任务（免费 · 生成约 1~3 分钟）</button>
+          <div class="msg" id="msgV">提交后可在「任务中心」实时查看进度，任务队列持久化，刷新/重启不丢失。</div>
+        </div>
+        <div class="panel">
+          <h3>长视频接力（分镜串联 · 每段 4/5/6/8/10/12s · 最多 10 段 = 120 秒）</h3>
+          <div class="refs-box">
+            <div class="refs-actions">
+              <button class="mini-btn" onclick="upRefs('long')">首段锚定图（可选，上传）</button>
+              <span style="font-size:12px;color:#9ca3af">已选 <b id="cntLong">0</b>/5 张 · 用于锁定角色/场景，不选则首段纯文字</span>
+            </div>
+            <div class="refs-list" id="refsLong"></div>
+            <div class="refs-his-title">或从历史记录选（点击选择/取消）：</div>
+            <div class="refs-his" id="hisLong"></div>
+          </div>
+          <textarea id="promptLong" placeholder="每行写一段的动作描述，行数 = 分镜数（1~10 行）。&#10;提示：支持「第N段（0-10秒）」标题行，标题会自动忽略，并按标题里的秒数自动识别每段时长（如 0-10 → 10 秒），可整段直接粘贴。&#10;例：&#10;第1段（0-10秒）&#10;橘猫躺在窗台上晒太阳，镜头缓慢推进&#10;第2段（10-20秒）&#10;橘猫伸懒腰站起来，跳到窗台边缘&#10;（每段自动以上一段最后一帧开头，画面自然衔接）"></textarea>
+          <div class="opts">
+            <label>画幅<select id="longRatio">
+              <option value="16:9" selected>16:9</option><option value="21:9">21:9</option><option value="4:3">4:3</option>
+              <option value="1:1">1:1</option><option value="3:4">3:4</option><option value="9:16">9:16</option>
+            </select></label>
+            <span style="font-size:12px;color:#9ca3af">预计成片 <b id="longDur">0</b> 秒<span id="longDurSeg"></span></span>
+          </div>
+          <button class="btn" id="goLong">提交长视频（自动尾帧接力 · 时长取标题秒数，未写则 12 秒）</button>
+          <div class="msg" id="msgLong"></div>
+        </div>
+        <div class="panel">
+          <h3>最近生成</h3>
+          <div class="recent" id="recentV"></div>
+          <div class="empty" id="emptyV">还没有结果</div>
+        </div>
+      </div>
+
+      <!-- ===== 图像理解 ===== -->
+      <div class="view" id="view-vision">
+        <div class="panel">
+          <h3>图像理解</h3>
+          <div class="refs-box">
+            <div class="refs-actions">
+              <button class="mini-btn" onclick="upRefs('vision')">上传图片</button>
+              <span style="font-size:12px;color:#9ca3af">或从历史记录选一张</span>
+            </div>
+            <div class="refs-list" id="refsVision"></div>
+            <div class="refs-his-title">历史记录（点击选择）：</div>
+            <div class="refs-his" id="hisVision"></div>
+          </div>
+          <textarea id="qVision" placeholder="针对这张图提问，例如：描述画面内容、这是什么风格、帮我分析构图"></textarea>
+          <button class="btn" id="goVision">提问</button>
+          <div class="msg" id="msgVision"></div>
+          <div class="answer-box" id="ansVision"></div>
+        </div>
+      </div>
+
+      <!-- ===== 聊天 ===== -->
+      <div class="view" id="view-chat">
+        <div class="panel">
+          <h3>聊天（agnes-3.0-flash）</h3>
+          <div class="chatbox" id="chatBox"></div>
+          <div class="chatinput">
+            <textarea id="chatIn" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+            <button class="btn" id="goChat">发送</button>
+          </div>
+          <div class="msg" id="msgChat"></div>
+        </div>
+      </div>
+
+      <!-- ===== 任务中心 ===== -->
+      <div class="view" id="view-tasks">
+        <div class="panel">
+          <h3>任务中心 <span style="font-size:12px;color:#9ca3af">· 视频等耗时任务在这里排队执行，服务重启也不丢</span></h3>
+          <div id="taskList"></div>
+          <div class="empty" id="emptyTasks">暂无任务</div>
+        </div>
+      </div>
+
+      <!-- ===== 历史资产 ===== -->
+      <div class="view" id="view-assets">
+        <div class="panel">
+          <h3>历史资产</h3>
+          <div class="assets-filter">
+            <button class="mini-btn active" data-f="all" onclick="setAssetFilter('all')">全部</button>
+            <button class="mini-btn" data-f="image" onclick="setAssetFilter('image')">图片</button>
+            <button class="mini-btn" data-f="video" onclick="setAssetFilter('video')">视频</button>
+          </div>
+          <div class="assets-wrap">
+            <div class="his-list" id="assetsGrid"></div>
+            <div class="his-detail" id="assetDetail"><div class="empty" id="emptyAssets">暂无资产</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" onclick="closeModal()">
+  <img id="modalImg" src="" alt="" style="display:none">
+  <video id="modalVid" src="" controls style="display:none"></video>
+</div>
+<input type="file" id="upFile" accept="image/png,image/jpeg,image/webp" multiple hidden>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = {
+  view: "t2i",
+  busy: {},
+  history: [],
+  selAsset: null,
+  tasks: [],
+  assetFilter: "all",
+  refsI2I: [], refsVideo: [], refsLong: [], refVision: null,
+  chatMsgs: [],
+  taskTimer: null,
+  scrollTasks: false,   // 进入任务中心时滚动到最新任务（只滚一次）
+};
+const TITLES = { t2i: "文生图", i2i: "图生图 · 合成", video: "视频生成", vision: "图像理解", chat: "聊天", tasks: "任务中心", assets: "历史资产" };
+
+/* ===== 基础 ===== */
+function setStatus(text, err) {
+  const el = $("status");
+  el.textContent = text;
+  el.className = "status" + (err ? " err" : "");
+}
+function msg(id, text, err) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "msg" + (err ? " err" : "");
+}
+async function fetchJSON(url, opts) {
+  const r = await fetch(url, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || ("请求失败 HTTP " + r.status));
+  return data;
+}
+function escapeHtml(s) {
+  return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function fillSelect(id, items, sel) {
+  const el = $(id);
+  el.innerHTML = items.map(v => `<option value="${v}"${v === sel ? " selected" : ""}>${v}</option>`).join("");
+}
+function closeModal() {
+  const v = $("modalVid");
+  v.pause(); v.removeAttribute("src"); v.load();  // 释放视频资源
+  $("modal").classList.remove("show");
+}
+function big(src) {
+  $("modalImg").style.display = ""; $("modalVid").style.display = "none";
+  $("modalImg").src = src;
+  $("modal").classList.add("show");
+}
+function bigVid(src) {
+  $("modalImg").style.display = "none"; $("modalVid").style.display = "";
+  $("modalVid").src = src;
+  $("modal").classList.add("show");
+  $("modalVid").play();
+}
+
+async function loadCfg() {
+  try {
+    const c = await fetchJSON("/api/config");
+    fillSelect("ratioI2I", c.ratios, "1:1");
+    fillSelect("levelI2I", c.levels, "1K");
+  } catch (e) {
+    setStatus("异常", true);
+  }
+}
+
+/* ===== 视图切换 ===== */
+function setView(v) {
+  state.view = v;
+  document.querySelectorAll(".nav .item").forEach(b => b.classList.toggle("active", b.dataset.view === v));
+  document.querySelectorAll(".view").forEach(el => el.classList.toggle("on", el.id === "view-" + v));
+  $("viewTitle").textContent = TITLES[v];
+  if (v === "tasks") { state.scrollTasks = true; renderTasks(); }
+  if (v === "assets") renderAssets();
+}
+
+/* ===== 参考图 ===== */
+function refKey(t) { return t === "i2i" ? "refsI2I" : t === "video" ? "refsVideo" : t === "long" ? "refsLong" : "refsVision"; }
+function maxRef(t) { return t === "vision" ? 1 : 5; }
+
+function upRefs(t) {
+  $("upFile").onchange = e => {
+    Array.from(e.target.files || []).forEach(f => {
+      if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return;
+      if (f.size > 10 * 1024 * 1024) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        if (t === "vision") state.refVision = { src: ev.target.result, name: f.name };
+        else {
+          const arr = state[refKey(t)];
+          if (arr.length >= maxRef(t)) { msg(refMsgId(t), `最多 ${maxRef(t)} 张`, true); return; }
+          arr.push({ src: ev.target.result, name: f.name });
+        }
+        renderRefs();
+      };
+      reader.readAsDataURL(f);
+    });
+    e.target.value = "";
+  };
+  $("upFile").click();
+}
+function refMsgId(t) { return "msg" + (t === "i2i" ? "I2I" : t === "long" ? "Long" : "V"); }
+
+function toggleHistRef(t, url) {
+  if (t === "vision") {
+    state.refVision = state.refVision && state.refVision.src === url ? null : { src: url, name: "hist.png" };
+  } else {
+    const arr = state[refKey(t)];
+    const i = arr.findIndex(r => r.src === url);
+    if (i >= 0) arr.splice(i, 1);
+    else {
+      if (arr.length >= maxRef(t)) { msg(refMsgId(t), `最多 ${maxRef(t)} 张`, true); return; }
+      arr.push({ src: url, name: "hist.png" });
+    }
+  }
+  renderRefs();
+}
+
+function renderRefs() {
+  const mkList = t => {
+    const arr = t === "vision" ? (state.refVision ? [state.refVision] : []) : state[refKey(t)];
+    $(`refs${t === "i2i" ? "I2I" : t === "video" ? "Video" : t === "long" ? "Long" : "Vision"}`).innerHTML =
+      arr.map((r, i) => `<span class="ref-item"><img src="${r.src}" alt=""><button class="x" onclick="rmRef('${t}',${i})">✕</button></span>`).join("");
+    if (t !== "vision") $(`cnt${t === "i2i" ? "I2I" : t === "video" ? "Video" : "Long"}`).textContent = arr.length;
+  };
+  mkList("i2i"); mkList("video"); mkList("long"); mkList("vision");
+  ["i2i", "video", "long", "vision"].forEach(t => {
+    const box = $(`his${t === "i2i" ? "I2I" : t === "video" ? "Video" : t === "long" ? "Long" : "Vision"}`);
+    const all = [];
+    // 只收集图片格式（png/jpg/jpeg/webp），排除视频 mp4
+    state.history.forEach(h => (h.files || []).forEach(f => {
+      if (/\.(png|jpe?g|webp)$/i.test(f)) all.push(f);
+    }));
+    if (!all.length) { box.innerHTML = '<span style="font-size:12px;color:#cbd5e1">暂无历史图</span>'; return; }
+    const selSet = t === "vision" ? new Set(state.refVision ? [state.refVision.src] : []) : new Set(state[refKey(t)].map(r => r.src));
+    box.innerHTML = all.map(u => `<img src="${u}" alt="" data-src="${u}" class="${selSet.has(u) ? "sel" : ""}">`).join("");
+    box.querySelectorAll("img").forEach(img => img.addEventListener("click", () => toggleHistRef(t, img.dataset.src)));
+  });
+  $("vRefsBox").style.display = $("vMode").value === "reference" ? "" : "none";
+}
+function rmRef(t, i) {
+  if (t === "vision") state.refVision = null;
+  else state[refKey(t)].splice(i, 1);
+  renderRefs();
+}
+
+/* ===== 最近生成 ===== */
+function renderRecent() {
+  const imgs = state.history.filter(h => h.mode !== "video");
+  const vids = state.history.filter(h => h.mode === "video");
+  ["T2I", "I2I", "V"].forEach((k, idx) => {
+    const src = idx === 0 ? imgs.filter(h => h.mode === "text2img") : idx === 1 ? imgs.filter(h => h.mode === "edit") : vids;
+    const box = $(`recent${k}`); const empty = $(`empty${k}`);
+    const top = src.slice(0, 6);
+    if (!top.length) { box.innerHTML = ""; empty.style.display = ""; return; }
+    empty.style.display = "none";
+    box.innerHTML = top.map(h => (h.mode === "video"
+      ? `<div class="rc vid-card"><video src="${h.files[0]}" muted preload="metadata" onclick="bigVid('${h.files[0]}')"></video><div class="play-badge">▶</div><div class="lbl"><span>视频</span><a href="${h.files[0]}" download>下载</a></div></div>`
+      : `<div class="rc"><img src="${h.files[0]}" alt="" onclick="big('${h.files[0]}')"><div class="lbl"><span>${h.time.slice(5)}</span><a href="${h.files[0]}" download>下载</a></div></div>`)).join("");
+  });
+}
+
+/* ===== 文生图 ===== */
+async function genT2I() {
+  if (state.busy.t2i) return;
+  const prompt = $("promptT2I").value.trim();
+  if (!prompt) { msg("msgT2I", "请先填写提示词", true); return; }
+  state.busy.t2i = true; $("goT2I").disabled = true; setStatus("生成中…");
+  msg("msgT2I", "正在调用文生图接口（2.5-flash），10~60 秒…");
+  try {
+    const d = await fetchJSON("/api/generate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, level: $("levelT2I").value, ratio: $("ratioT2I").value, n: +$("nT2I").value }),
+    });
+    msg("msgT2I", `生成成功 ${d.files.length} 张`); setStatus("就绪");
+    await refreshAll();
+  } catch (e) { msg("msgT2I", e.message, true); setStatus("失败", true); }
+  finally { state.busy.t2i = false; $("goT2I").disabled = false; }
+}
+
+/* ===== 图生图 / 多图合成 ===== */
+async function genI2I() {
+  if (state.busy.i2i) return;
+  const prompt = $("promptI2I").value.trim();
+  if (!prompt) { msg("msgI2I", "请填写修改/合成指令", true); return; }
+  if (!state.refsI2I.length) { msg("msgI2I", "请先添加参考图（上传或从历史选）", true); return; }
+  state.busy.i2i = true; $("goI2I").disabled = true; setStatus("生成中…");
+  msg("msgI2I", `正在调用图生图（${state.refsI2I.length} 张参考图）…`);
+  try {
+    const d = await fetchJSON("/api/edit", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt, level: $("levelI2I").value, ratio: $("ratioI2I").value, n: +$("nI2I").value,
+        refs: state.refsI2I.map(r => r.src),
+      }),
+    });
+    msg("msgI2I", `生成成功 ${d.files.length} 张`); setStatus("就绪");
+    await refreshAll();
+  } catch (e) { msg("msgI2I", e.message, true); setStatus("失败", true); }
+  finally { state.busy.i2i = false; $("goI2I").disabled = false; }
+}
+
+/* ===== 视频：提交进队列 ===== */
+async function submitV() {
+  if (state.busy.video) return;
+  const prompt = $("promptV").value.trim();
+  if (!prompt) { msg("msgV", "请填写视频描述", true); return; }
+  const mode = $("vMode").value;
+  if (mode === "reference" && !state.refsVideo.length) { msg("msgV", "图生视频请先添加参考图", true); return; }
+  state.busy.video = true; $("goV").disabled = true; setStatus("提交中…");
+  try {
+    const d = await fetchJSON("/api/video", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt, mode, seconds: $("vSec").value, aspect_ratio: $("vRatio").value,
+        refs: mode === "reference" ? state.refsVideo.map(r => r.src) : [],
+      }),
+    });
+    msg("msgV", `任务已进入队列（#${d.task_id}）`);
+    setStatus("就绪");
+    await loadTasks(true);
+    const active = state.tasks.filter(t => t.status === "queued" || t.status === "running").length;
+    if (active > 1) msg("msgV", `任务已进入队列，前方还有 ${active - 1} 个任务排队`);
+    setView("tasks");
+  } catch (e) { msg("msgV", e.message, true); setStatus("失败", true); }
+  finally { state.busy.video = false; $("goV").disabled = false; }
+}
+
+/* ===== 长视频接力 ===== */
+function parseLong() {
+  // 解析长视频输入：忽略「第N段（X-Y秒）」标题行，提取统一每段秒数
+  const lines = $("promptLong").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const blocks = [], secs = [];
+  for (const ln of lines) {
+    const m = ln.match(/^第\s*\d+\s*段[（(]?\s*(\d+)\s*[-~]\s*(\d+)\s*秒?[）)]?/);
+    if (m) { secs.push(parseInt(m[2]) - parseInt(m[1])); continue; }
+    blocks.push(ln);
+  }
+  const segSec = secs.length && secs.every(s => s === secs[0]) ? secs[0] : 12;
+  return { blocks, segSec };
+}
+function updLongDur() {
+  const { blocks, segSec } = parseLong();
+  $("longDur").textContent = blocks.length ? blocks.length * segSec : 0;
+  $("longDurSeg").textContent = blocks.length ? `（每段 ${segSec}s × ${blocks.length} 段）` : "";
+}
+async function submitLong() {
+  if (state.busy.long) return;
+  const { blocks, segSec } = parseLong();
+  if (!blocks.length) { msg("msgLong", "请填写分镜描述（每行一段）", true); return; }
+  if (blocks.length > 10) { msg("msgLong", "最多 10 段（120 秒）", true); return; }
+  state.busy.long = true; $("goLong").disabled = true; setStatus("提交中…");
+  try {
+    const d = await fetchJSON("/api/longvideo", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blocks, refs: state.refsLong.map(r => r.src), aspect_ratio: $("longRatio").value, seconds: String(segSec) }),
+    });
+    msg("msgLong", `长视频任务已进队列：${blocks.length} 段 ≈ ${d.total_seconds} 秒（#${d.task_id}）`);
+    setStatus("就绪");
+    await loadTasks(true);
+    setView("tasks");
+  } catch (e) { msg("msgLong", e.message, true); setStatus("失败", true); }
+  finally { state.busy.long = false; $("goLong").disabled = false; }
+}
+
+/* ===== 任务中心 ===== */
+async function loadTasks(fast) {
+  try {
+    state.tasks = await fetchJSON("/api/tasks");
+    renderTasks();
+    const running = state.tasks.filter(t => t.status === "queued" || t.status === "running").length;
+    $("busyBadge").classList.toggle("show", running > 0);
+    $("busyBadge").textContent = `任务进行中 · ${running}`;
+    $("taskBadge").classList.toggle("show", running > 0);
+    $("taskBadge").textContent = running;
+    if (state.taskTimer) clearTimeout(state.taskTimer);
+    state.taskTimer = setTimeout(() => loadTasks(true), running ? 3000 : 6000);
+  } catch (e) { /* 服务暂不可达时静默，下轮重试 */ }
+}
+
+const ST_LABEL = { queued: "排队中", running: "生成中", completed: "已完成", failed: "失败", cancelled: "已取消" };
+function taskStLabel(t) {
+  if (t.status === "queued" && t.error) return "重试中";
+  if (t.type === "longvideo" && (t.status === "queued" || t.status === "running")) {
+    const segs = (t.segs || []).length, idx = (t.seg_idx || 0) + 1;
+    return `第 ${Math.min(idx, segs)}/${segs} 段 · ${ST_LABEL[t.status]}`;
+  }
+  return ST_LABEL[t.status] || t.status;
+}
+function taskOps(t) {
+  const ops = [];
+  if (t.status === "queued" || t.status === "running")
+    ops.push(`<button class="btn ghost" onclick="cancelTask('${t.id}')">取消</button>`);
+  if (t.status === "failed" || t.status === "cancelled")
+    ops.push(`<button class="btn ghost" onclick="retryTask('${t.id}')">重试</button>`);
+  if (t.status === "completed" || t.status === "failed" || t.status === "cancelled")
+    ops.push(`<button class="btn ghost" onclick="delTask('${t.id}')">删除</button>`);
+  return ops.join("");
+}
+function taskBody(t) {
+  if (t.status === "failed" || t.status === "cancelled")
+    return `<div class="err">${escapeHtml(t.error || "无")}</div>`;
+  if (t.status === "completed" && t.type === "video" && t.result)
+    return `<video src="${t.result.url}" controls preload="metadata"></video>
+            <div class="ops"><a href="${t.result.url}" download>下载 MP4</a></div>`;
+  if (t.status === "completed" && t.type === "longvideo" && t.result)
+    return `<video src="${t.result.url}" controls preload="metadata"></video>
+            <div class="ops"><a href="${t.result.url}" download>下载 MP4</a></div>`;
+  if (t.status === "completed" && t.type === "image" && t.result)
+    return `<div class="thumbs">${(t.result.files || []).map(f => `<img src="${f}" alt="" onclick="big('${f}')">`).join("")}</div>
+            <div class="ops">${(t.result.files || []).map(f => `<a href="${f}" download>下载</a>`).join("")}</div>`;
+  if (t.status === "queued" && t.error)
+    return `<div class="err">${escapeHtml(t.error)}</div>`;
+  if (t.type === "longvideo" && (t.status === "queued" || t.status === "running") && (t.segs || []).length)
+    return `<div class="err" style="color:#2563eb">${t.seg_idx >= (t.segs || []).length ? "分段全部完成，正在拼接成片…" : `正在生成第 ${(t.seg_idx || 0) + 1}/${(t.segs || []).length} 段：${escapeHtml((t.segs[t.seg_idx] || {}).desc || "")}`}</div>`;
+  return "";
+}
+function taskRowHtml(t) {
+  const stLabel = taskStLabel(t);
+  return `
+    <div class="task-row" data-id="${t.id}" data-sig="${taskSig(t)}">
+      <div class="head">
+        <span class="t-type ${t.type}">${t.type === "longvideo" ? "长视频" : t.type === "video" ? "视频" : "图片"}</span>
+        <span class="t-prompt" title="${escapeHtml(t.prompt)}">${escapeHtml(t.prompt)}</span>
+        <span class="t-status ${t.status}">${stLabel}</span>
+        <span class="t-time">${t.created_at}</span>
+        <div class="ops">${taskOps(t)}</div>
+      </div>
+      ${(t.status === "queued" || t.status === "running") ? `<div class="prog"><div style="width:${Math.max(4, t.progress || 0)}%"></div></div>` : ""}
+      <div class="body">${taskBody(t)}</div>
+    </div>`;
+}
+function taskSig(t) {
+  const res = t.result ? ((t.result.url || "") + "|" + (t.result.files || []).join(",")) : "";
+  return [t.status, t.progress, t.error, res].join("§");
+}
+function renderTasks() {
+  $("emptyTasks").style.display = state.tasks.length ? "none" : "";
+  const box = $("taskList");
+  if (state.scrollTasks) {
+    state.scrollTasks = false;
+    // 只在进入任务中心时滚到最新任务（最新任务在列表顶部，scroll-margin-top 避开顶部栏）
+    requestAnimationFrame(() => {
+      const first = box.querySelector(".task-row");
+      if (first) first.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+  }
+  // 索引现有行：id -> 元素
+  const cur = {};
+  box.querySelectorAll(".task-row").forEach(el => { cur[el.dataset.id] = el; });
+  // 增量更新：状态/进度变化的行才重绘；未变化的行（含播放中的视频）原样保留
+  state.tasks.forEach(t => {
+    const old = cur[t.id];
+    const s = taskSig(t);
+    if (old) {
+      delete cur[t.id];
+      if (old.dataset.sig === s) return;  // 无变化，保留 DOM（不打断视频播放）
+      old.outerHTML = taskRowHtml(t);     // 有变化，只替换这一行
+    } else {
+      box.insertAdjacentHTML("afterbegin", taskRowHtml(t));  // 新任务插到列表顶部
+    }
+  });
+  // 清理已消失的任务行
+  Object.values(cur).forEach(el => el.remove());
+}
+async function cancelTask(id) {
+  try { await fetchJSON(`/api/tasks/${id}/cancel`, { method: "POST" }); await loadTasks(true); }
+  catch (e) { alert(e.message); }
+}
+async function delTask(id) {
+  try { await fetchJSON(`/api/tasks/${id}`, { method: "DELETE" }); await loadTasks(true); }
+  catch (e) { alert(e.message); }
+}
+async function retryTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  try {
+    if (t.type === "longvideo") {
+      await fetchJSON("/api/longvideo", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blocks: t.params.blocks, refs: t.params.refs || [],
+          aspect_ratio: t.params.aspect_ratio || "16:9",
+        }),
+      });
+    } else if (t.type === "video") {
+      await fetchJSON("/api/video", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: t.prompt, mode: t.params.mode, seconds: t.params.seconds,
+          aspect_ratio: t.params.aspect_ratio, refs: t.params.refs || [],
+        }),
+      });
+    } else { return; }
+    await loadTasks(true);
+  } catch (e) { alert(e.message); }
+}
+
+/* ===== 历史资产 ===== */
+async function loadHistory() {
+  try { state.history = await fetchJSON("/api/history"); renderRecent(); renderAssets(); renderRefs(); }
+  catch (e) { /* ignore */ }
+}
+function setAssetFilter(f) {
+  state.assetFilter = f;
+  document.querySelectorAll(".assets-filter .mini-btn").forEach(b => b.classList.toggle("active", b.dataset.f === f));
+  renderAssets();
+}
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function renderAssets() {
+  const f = state.assetFilter;
+  const list = state.history.filter(h => f === "all" ? true : (f === "image" ? h.mode !== "video" : h.mode === "video"));
+  $("emptyAssets").style.display = list.length ? "none" : "";
+  if (!list.find(h => h.id === state.selAsset)) state.selAsset = list.length ? list[0].id : null;
+  $("assetsGrid").innerHTML = list.map(h => {
+    const vid = h.mode === "video";
+    const first = (h.files && h.files[0]) || "";
+    const blocks = h.blocks || [];
+    const label = escapeHtml((h.prompt || (blocks[0] || "") || "（无提示词）").slice(0, 42));
+    const kind = blocks.length > 1 ? "长视频" : (vid ? "视频" : "图片");
+    const t = h.time ? h.time.slice(5) : "";
+    return `<div class="his-item ${vid ? "vid" : ""} ${h.id === state.selAsset ? "active" : ""}" onclick="selectAsset('${h.id}')">
+      ${vid ? `<video class="thumb" src="${first}" muted preload="metadata"></video><span class="play-badge" style="width:20px;height:20px;font-size:10px">▶</span>` : `<img class="thumb" src="${first}" alt="">`}
+      <div class="info"><div class="t">${kind} · ${label}</div><div class="s">${t}</div></div>
+      <button class="del" onclick="event.stopPropagation();delAsset('${h.id}')">✕</button>
+    </div>`;
+  }).join("");
+  renderAssetDetail(state.selAsset);
+}
+function selectAsset(id) {
+  state.selAsset = id;
+  document.querySelectorAll(".his-item").forEach(el => el.classList.toggle("active", el.getAttribute("onclick").includes(id)));
+  renderAssetDetail(id);
+}
+function renderAssetDetail(id) {
+  const h = state.history.find(x => x.id === id);
+  const box = $("assetDetail");
+  if (!h) {
+    box.innerHTML = `<div class="empty">从左侧列表选择一个资产查看提示词</div>`;
+    return;
+  }
+  const vid = h.mode === "video";
+  const first = (h.files && h.files[0]) || "";
+  const blocks = h.blocks || [];
+  const segSec = h.seg_seconds || "";
+  let promptHtml = "";
+  if (blocks.length > 1) {
+    promptHtml = blocks.map((b, i) => `<div class="seg"><b>第${i + 1}段</b>（${segSec || "?"}s）<br>${escapeHtml(b)}</div>`).join("");
+  } else {
+    promptHtml = `<div class="prompt-block">${escapeHtml(h.prompt || "（未记录提示词）")}</div>`;
+  }
+  const metaParts = [];
+  if (h.ratio) metaParts.push(`比例 ${h.ratio}`);
+  if (blocks.length > 1) metaParts.push(`分镜 ${blocks.length} 段 × ${segSec || "?"}s`);
+  if (h.level) metaParts.push(`档位 ${h.level}`);
+  if (h.n > 1) metaParts.push(`张数 ${h.n}`);
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <b>${blocks.length > 1 ? "长视频" : (vid ? "视频" : "图片")}资产 · ${escapeHtml(h.time || "")}</b>
+      <span style="font-size:12px"><a href="${first}" download>下载</a> · <a href="#" onclick="event.preventDefault();delAsset('${h.id}')" style="color:#dc2626">删除</a></span>
+    </div>
+    ${vid ? `<video class="preview" src="${first}" controls preload="metadata"></video>` : `<img class="preview" src="${first}" style="cursor:zoom-in" onclick="big('${first}')" alt="">`}
+    <div style="margin-top:12px;font-size:12px;color:#6b7280">参数：${metaParts.join(" · ") || "—"}</div>
+    <div style="margin-top:8px;font-weight:600">提示词：</div>
+    ${promptHtml}`;
+}
+async function delAsset(id) {
+  try { await fetchJSON(`/api/history/${id}`, { method: "DELETE" }); await loadHistory(); }
+  catch (e) { alert(e.message); }
+}
+
+async function refreshAll() {
+  await Promise.all([loadTasks(false), loadHistory()]);
+}
+
+/* ===== 图像理解 ===== */
+async function askVision() {
+  if (state.busy.vision) return;
+  const q = $("qVision").value.trim();
+  if (!q) { msg("msgVision", "请输入问题", true); return; }
+  if (!state.refVision) { msg("msgVision", "请先选择一张图片", true); return; }
+  state.busy.vision = true; $("goVision").disabled = true; setStatus("理解中…");
+  msg("msgVision", "正在读图分析…");
+  $("ansVision").style.display = ""; $("ansVision").textContent = "思考中…";
+  try {
+    const d = await fetchJSON("/api/understand", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q, ref: state.refVision.src }),
+    });
+    $("ansVision").textContent = d.answer;
+    setStatus("就绪"); msg("msgVision", "");
+  } catch (e) { $("ansVision").style.display = "none"; msg("msgVision", e.message, true); setStatus("失败", true); }
+  finally { state.busy.vision = false; $("goVision").disabled = false; }
+}
+
+/* ===== 聊天 ===== */
+function renderChat() {
+  const box = $("chatBox");
+  if (!state.chatMsgs.length) { box.innerHTML = '<div class="empty" style="padding:40px 0">开始和 agnes-3.0-flash 对话吧</div>'; return; }
+  box.innerHTML = state.chatMsgs.map(m => `
+    <div class="m ${m.role === "user" ? "user" : "ai"}">
+      <div class="who">${m.role === "user" ? "你" : "Agnes 3.0"}</div>
+      <div class="body">${escapeHtml(m.content)}</div>
+    </div>`).join("");
+  box.scrollTop = box.scrollHeight;
+}
+async function sendChat() {
+  if (state.busy.chat) return;
+  const text = $("chatIn").value.trim();
+  if (!text) return;
+  state.chatMsgs.push({ role: "user", content: text });
+  $("chatIn").value = ""; renderChat();
+  state.busy.chat = true; $("goChat").disabled = true; setStatus("回复中…");
+  try {
+    const d = await fetchJSON("/api/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: state.chatMsgs.slice(-20) }),
+    });
+    state.chatMsgs.push({ role: "assistant", content: d.reply });
+    renderChat(); setStatus("就绪");
+  } catch (e) {
+    state.chatMsgs.pop(); renderChat();
+    $("msgChat").textContent = e.message; $("msgChat").className = "msg err";
+    setStatus("失败", true);
+  }
+  finally { state.busy.chat = false; $("goChat").disabled = false; }
+}
+
+/* ===== 初始化 ===== */
+$("goT2I").addEventListener("click", genT2I);
+$("goI2I").addEventListener("click", genI2I);
+$("goV").addEventListener("click", submitV);
+$("goLong").addEventListener("click", submitLong);
+$("promptLong").addEventListener("input", updLongDur);
+$("goVision").addEventListener("click", askVision);
+$("goChat").addEventListener("click", sendChat);
+$("chatIn").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+$("vMode").addEventListener("change", () => {
+  $("vRefsBox").style.display = $("vMode").value === "reference" ? "" : "none";
+});
+
+loadCfg();
+loadHistory();
+loadTasks(true);
+</script>
+</body>
+</html>
